@@ -1,0 +1,15 @@
+{
+  "name": "@decentrapay/terminal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "serialport": "^12.0.0",
+    "ws": "^8.18.0"
+  }
+}
