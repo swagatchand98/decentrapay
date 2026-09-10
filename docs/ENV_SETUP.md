@@ -17,7 +17,7 @@ where each value goes.
 
 ### 1. An Amoy RPC URL
 
-Used by `AMOY_RPC` (contracts, terminal) and `VITE_AMOY_RPC` (web) — same value in
+Used by `AMOY_RPC` (contracts, terminal) and `VITE_AMOY_RPC` (web) — same value inc  
 all three places. Two options:
 
 - **Public RPC, zero signup:** `https://rpc-amoy.polygon.technology` (from
@@ -53,7 +53,16 @@ place each one's address and/or key into specific variables below.
 ### 3. Fund the deployer and terminal wallets
 
 Get free test POL from the [Polygon faucet](https://faucet.polygon.technology/):
-select network **Polygon Amoy**, paste the address, request funds. Fund:
+select network **Polygon Amoy**, paste the address, request funds.
+
+**Get more than you think you need.** Deploying `DecentraPay` alone has been
+observed costing ~0.16 POL in gas on Amoy — one faucet drip (often ~0.1 POL) can
+fall short, which fails with `ProviderError: insufficient funds for gas * price +
+value` from Hardhat. Aim for at least **0.5 POL** on the deployer before running
+`deploy:amoy`; if one request isn't enough, request again after any cooldown, or
+use a second faucet (e.g. Alchemy's or a thirdweb Amoy faucet).
+
+Fund:
 
 - The **deployer** wallet — pays gas to deploy the contract and call `setMerchant`.
 - The **terminal** wallet — pays gas for every `charge()` call it signs later.
