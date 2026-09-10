@@ -124,13 +124,24 @@ button press would:
 - `CANCEL` — simulate the customer's red button
 
 To exercise the full flow: run `terminal/` (`npm start`), then `web/` (`npm run
-dev`), and open three browser tabs — `/` (connect a funded customer wallet,
-deposit, register a finger, set an allowance for your merchant address), `/pos`
-(enter an amount, press Charge), and `/display` (a stand-in for the physical
-OLED). Back in `terminal/`'s console, type the `FINGER:<slot>` you registered,
-then `CONFIRM` — both browser tabs update live, and `/pos` ends on a receipt with
-a QR to the transaction. `firmware/` implements the same protocol for when the
-real ESP32 is wired up; nothing else changes.
+dev`), and open three browser tabs — `/` (connect a customer wallet, deposit,
+register a finger, set an allowance for your merchant address), `/pos` (enter an
+amount, press Charge), and `/display` (a stand-in for the physical OLED). Back in
+`terminal/`'s console, type the `FINGER:<slot>` you registered, then `CONFIRM` —
+both browser tabs update live, and `/pos` ends on a receipt with a QR to the
+transaction. `firmware/` implements the same protocol for when the real ESP32 is
+wired up; nothing else changes.
+
+**Fund the customer wallet too.** Whatever MetaMask account you connect on `/`
+needs its own test POL — separate from the deployer/terminal/merchant wallets
+above, and easy to forget since it's not in any `.env` file. Without it, every
+button on the onboarding page (Deposit, Register, Set Allowance, Withdraw) will
+either silently fail or show MetaMask's "Network fee" warning with a
+"Review alert" button instead of the normal Confirm — that's MetaMask telling you
+this account can't pay gas, not a bug in the app. Fund it the same way: [Polygon
+faucet](https://faucet.polygon.technology/), network **Polygon Amoy**, paste that
+account's address. You'll need enough for both gas (a few onboarding
+transactions) and whatever you intend to actually deposit into the vault.
 
 ## If `deploy:amoy` fails partway through
 
