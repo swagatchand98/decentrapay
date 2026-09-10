@@ -9,7 +9,13 @@ export const AMOY_CHAIN_ID_HEX = "0x13882";
 export const EXPLORER_BASE = "https://amoy.polygonscan.com";
 
 export function getReadProvider() {
-  return new ethers.JsonRpcProvider(import.meta.env.VITE_AMOY_RPC);
+  // batchMaxCount: 1 disables ethers' automatic JSON-RPC batching. Public RPC
+  // endpoints (like Amoy's) often don't implement batch requests correctly,
+  // which surfaces as an opaque "could not coalesce error" the moment two
+  // reads fire concurrently (e.g. Promise.all([balanceOf(...), fingerOf(...)])).
+  return new ethers.JsonRpcProvider(import.meta.env.VITE_AMOY_RPC, undefined, {
+    batchMaxCount: 1,
+  });
 }
 
 export function getReadContract() {

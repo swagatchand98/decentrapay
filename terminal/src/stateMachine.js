@@ -26,7 +26,10 @@ export class StateMachine {
   }
 
   startCharge(amountPol) {
-    if (this.state !== "IDLE") return;
+    if (this.state !== "IDLE") {
+      console.log(`[terminal] Ignoring START_CHARGE — a charge is already in progress (state: ${this.state}).`);
+      return;
+    }
     if (!amountPol || Number(amountPol) <= 0) return;
 
     this.session = { amountPol };
@@ -36,7 +39,10 @@ export class StateMachine {
   }
 
   cancel() {
-    if (!["AWAITING_CUSTOMER", "IDENTIFYING", "CONFIRM"].includes(this.state)) return;
+    if (!["AWAITING_CUSTOMER", "IDENTIFYING", "CONFIRM"].includes(this.state)) {
+      console.log(`[terminal] Ignoring CANCEL — no active session to cancel (state: ${this.state}).`);
+      return;
+    }
     this.input.write("IDLE");
     this.state = "IDLE";
     this.session = null;
@@ -47,10 +53,17 @@ export class StateMachine {
     if (line.startsWith("FINGER:")) return this.onFinger(line);
     if (line === "CONFIRM") return this.onConfirm();
     if (line === "CANCEL") return this.cancel();
+    console.log(`[terminal] Unrecognized input: "${line}" (expected FINGER:<slot>, CONFIRM, or CANCEL)`);
   }
 
   async onFinger(line) {
-    if (this.state !== "AWAITING_CUSTOMER") return;
+    if (this.state !== "AWAITING_CUSTOMER") {
+      console.log(
+        `[terminal] Ignoring "${line}" — no charge is awaiting a customer (state: ${this.state}). ` +
+          "Press Charge on /pos first."
+      );
+      return;
+    }
 
     const fingerId = Number(line.slice("FINGER:".length));
     this.state = "IDENTIFYING";
@@ -88,7 +101,10 @@ export class StateMachine {
   }
 
   async onConfirm() {
-    if (this.state !== "CONFIRM") return;
+    if (this.state !== "CONFIRM") {
+      console.log(`[terminal] Ignoring CONFIRM — nothing awaiting confirmation yet (state: ${this.state}).`);
+      return;
+    }
 
     const { fingerId, amountPol } = this.session;
     this.state = "SETTLING";
