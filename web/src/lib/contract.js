@@ -12,13 +12,35 @@ export function getReadProvider() {
   return new ethers.JsonRpcProvider(import.meta.env.VITE_AMOY_RPC);
 }
 
-// ethers' "could not coalesce error" is its generic fallback when it can't
-// pattern-match a JSON-RPC error into one of its specific typed errors — the
-// real underlying error is still there, just not surfaced. Depending on which
-// internal path threw it, it ends up either spread directly onto the error
-// (makeError does Object.assign(error, { error, payload })) or nested under
-// .info (some paths set that explicitly) — check both.
+const contractInterface = new ethers.Interface(CONTRACT_ABI);
+
+// Custom Solidity errors (InsufficientBalance, FingerSlotTaken, etc.) come
+// back from MetaMask as raw hex revert data, not a decoded name — MetaMask
+// has no way to know our ABI, so it falls back to a generic message like
+// "Internal JSON-RPC error" instead of naming the actual error. Wherever that
+// hex data survived the round-trip, decode it ourselves against our own ABI.
+//
+// Separately, ethers' own "could not coalesce error" is *its* generic
+// fallback when it can't pattern-match a JSON-RPC error into one of its
+// specific typed errors. The real underlying error is still there, just not
+// surfaced — depending on which internal path threw it, it ends up either
+// spread directly onto the error (makeError does
+// Object.assign(error, { error, payload })) or nested under .info (some
+// paths set that explicitly), so check both.
 export function describeError(err) {
+  const rawData = err?.data || err?.info?.error?.data || err?.error?.data;
+  if (typeof rawData === "string" && rawData.startsWith("0x") && rawData !== "0x") {
+    try {
+      const decoded = contractInterface.parseError(rawData);
+      if (decoded) {
+        const args = decoded.args.map((a) => (typeof a === "bigint" ? a.toString() : a)).join(", ");
+        return `${decoded.name}(${args})`;
+      }
+    } catch {
+      // Not one of our custom errors (or data too short/malformed) — fall through.
+    }
+  }
+
   const inner = err?.info?.error || err?.error;
   if (inner) {
     return inner.message || inner.reason || JSON.stringify(inner);

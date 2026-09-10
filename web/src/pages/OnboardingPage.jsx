@@ -31,9 +31,16 @@ function useOnboardingState() {
     }
   }
 
-  async function runAction(fn) {
+  async function runAction(fn, validate) {
     if (!wallet) return;
     setError("");
+    if (validate) {
+      const problem = validate();
+      if (problem) {
+        setError(problem);
+        return;
+      }
+    }
     setBusy(true);
     try {
       const tx = await fn();
@@ -97,7 +104,12 @@ export default function OnboardingPage() {
         <input value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="Amount in POL" />
         <button
           disabled={busy}
-          onClick={() => runAction(() => wallet.writeContract.deposit({ value: ethers.parseEther(depositAmount) }))}
+          onClick={() =>
+            runAction(
+              () => wallet.writeContract.deposit({ value: ethers.parseEther(depositAmount) }),
+              () => (!depositAmount || Number(depositAmount) <= 0 ? "Enter an amount to deposit." : null)
+            )
+          }
         >
           Deposit
         </button>
@@ -117,7 +129,20 @@ export default function OnboardingPage() {
           onChange={(e) => setFingerId(e.target.value)}
           placeholder="Finger slot (1-200)"
         />
-        <button disabled={busy} onClick={() => runAction(() => wallet.writeContract.registerFinger(Number(fingerId)))}>
+        <button
+          disabled={busy}
+          onClick={() =>
+            runAction(
+              () => wallet.writeContract.registerFinger(Number(fingerId)),
+              () => {
+                const n = Number(fingerId);
+                return Number.isInteger(n) && n >= 1 && n <= 200
+                  ? null
+                  : "Finger slot must be a whole number between 1 and 200.";
+              }
+            )
+          }
+        >
           Register
         </button>
       </div>
@@ -133,7 +158,10 @@ export default function OnboardingPage() {
         <button
           disabled={busy || !merchantAddress}
           onClick={() =>
-            runAction(() => wallet.writeContract.setAllowance(merchantAddress, ethers.parseEther(allowanceAmount)))
+            runAction(
+              () => wallet.writeContract.setAllowance(merchantAddress, ethers.parseEther(allowanceAmount)),
+              () => (!ethers.isAddress(merchantAddress) ? "Enter a valid merchant address." : null)
+            )
           }
         >
           Set Allowance
@@ -141,7 +169,12 @@ export default function OnboardingPage() {
         <button
           className="danger"
           disabled={busy || !merchantAddress}
-          onClick={() => runAction(() => wallet.writeContract.setAllowance(merchantAddress, 0n))}
+          onClick={() =>
+            runAction(
+              () => wallet.writeContract.setAllowance(merchantAddress, 0n),
+              () => (!ethers.isAddress(merchantAddress) ? "Enter a valid merchant address." : null)
+            )
+          }
         >
           Revoke
         </button>
@@ -153,7 +186,18 @@ export default function OnboardingPage() {
         <input value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="Amount in POL" />
         <button
           disabled={busy || !withdrawAmount}
-          onClick={() => runAction(() => wallet.writeContract.withdrawToWallet(ethers.parseEther(withdrawAmount)))}
+          onClick={() =>
+            runAction(
+              () => wallet.writeContract.withdrawToWallet(ethers.parseEther(withdrawAmount)),
+              () => {
+                if (!withdrawAmount || Number(withdrawAmount) <= 0) return "Enter an amount to withdraw.";
+                if (status.balancePol !== null && Number(withdrawAmount) > Number(status.balancePol)) {
+                  return `Amount exceeds your vault balance (${status.balancePol} POL).`;
+                }
+                return null;
+              }
+            )
+          }
         >
           Withdraw
         </button>
