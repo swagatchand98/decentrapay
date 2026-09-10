@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ethers } from "ethers";
-import { connectWallet, getReadContract } from "../lib/contract.js";
+import { connectWallet, describeError, getReadContract } from "../lib/contract.js";
 
 function useOnboardingState() {
   const [wallet, setWallet] = useState(null);
@@ -25,7 +25,7 @@ function useOnboardingState() {
       setWallet(w);
       await refreshStatus(w.address);
     } catch (err) {
-      setError(err.message || String(err));
+      setError(describeError(err));
     } finally {
       setBusy(false);
     }
@@ -40,7 +40,7 @@ function useOnboardingState() {
       await tx.wait();
       await refreshStatus(wallet.address);
     } catch (err) {
-      setError(err.shortMessage || err.reason || err.message || String(err));
+      setError(describeError(err));
     } finally {
       setBusy(false);
     }

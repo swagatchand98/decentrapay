@@ -9,13 +9,21 @@ export const AMOY_CHAIN_ID_HEX = "0x13882";
 export const EXPLORER_BASE = "https://amoy.polygonscan.com";
 
 export function getReadProvider() {
-  // batchMaxCount: 1 disables ethers' automatic JSON-RPC batching. Public RPC
-  // endpoints (like Amoy's) often don't implement batch requests correctly,
-  // which surfaces as an opaque "could not coalesce error" the moment two
-  // reads fire concurrently (e.g. Promise.all([balanceOf(...), fingerOf(...)])).
-  return new ethers.JsonRpcProvider(import.meta.env.VITE_AMOY_RPC, undefined, {
-    batchMaxCount: 1,
-  });
+  return new ethers.JsonRpcProvider(import.meta.env.VITE_AMOY_RPC);
+}
+
+// ethers' "could not coalesce error" is its generic fallback when it can't
+// pattern-match a JSON-RPC error into one of its specific typed errors — the
+// real underlying error is still there, just not surfaced. Depending on which
+// internal path threw it, it ends up either spread directly onto the error
+// (makeError does Object.assign(error, { error, payload })) or nested under
+// .info (some paths set that explicitly) — check both.
+export function describeError(err) {
+  const inner = err?.info?.error || err?.error;
+  if (inner) {
+    return inner.message || inner.reason || JSON.stringify(inner);
+  }
+  return err?.shortMessage || err?.reason || err?.message || String(err);
 }
 
 export function getReadContract() {
