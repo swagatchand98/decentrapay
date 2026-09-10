@@ -95,18 +95,42 @@ Fund:
 | Variable | Value |
 |---|---|
 | `VITE_AMOY_RPC` | Same RPC URL as above. |
-| `VITE_CONTRACT_ADDRESS` | The deployed contract address. Not known until after you run `npm run deploy:amoy` in `contracts/` — it's printed in that script's summary, and also saved as `"address"` in the generated `shared/DecentraPay.json`. |
+| `VITE_CONTRACT_ADDRESS` | Optional. Leave blank — the app defaults to the address in `shared/DecentraPay.json` (written by `deploy:amoy`), which is the source of truth. Only set this to point the app at a different deployment without touching that file. |
+| `VITE_TERMINAL_WS_URL` | Optional. Leave blank — defaults to `ws://localhost:8080`. Only set this if you changed `terminal/.env`'s `WS_PORT` away from 8080. |
 
 ## Suggested order
 
 1. Get the RPC URL and the three wallets (above); fund deployer + terminal.
 2. Fill in `contracts/.env` completely.
-3. Fill in `terminal/.env` completely.
-4. From `contracts/`: `npm run deploy:amoy`.
-5. Copy the printed contract address into `web/.env`'s `VITE_CONTRACT_ADDRESS`.
-6. If you left `MERCHANT_KEY` blank, follow the manual `registerTerminal` step the
+3. Fill in `terminal/.env` completely (leave `SERIAL_PORT` blank if you don't
+   have the ESP32 wired up yet — see "Testing without hardware" below).
+4. From `contracts/`: `npm run deploy:amoy`. This writes `shared/DecentraPay.json`,
+   which `web/` and `terminal/` both read automatically — `web/.env` needs
+   nothing further for the contract address.
+5. If you left `MERCHANT_KEY` blank, follow the manual `registerTerminal` step the
    deploy script printed.
-7. Optional: `npm run verify:amoy` once `ETHERSCAN_API_KEY` is set.
+6. Optional: `npm run verify:amoy` once `ETHERSCAN_API_KEY` is set.
+
+## Testing without hardware
+
+`terminal/` doesn't require the ESP32 to be connected. Leave `SERIAL_PORT` blank
+(or don't set it at all) and `npm start` in `terminal/` falls into a CLI mock
+input mode instead of real serial — it prints a prompt, and typing lines into
+that same terminal window drives the state machine exactly as a real scan or
+button press would:
+
+- `FINGER:<slot>` — simulate a finger scan for that slot
+- `CONFIRM` — simulate the customer's green button
+- `CANCEL` — simulate the customer's red button
+
+To exercise the full flow: run `terminal/` (`npm start`), then `web/` (`npm run
+dev`), and open three browser tabs — `/` (connect a funded customer wallet,
+deposit, register a finger, set an allowance for your merchant address), `/pos`
+(enter an amount, press Charge), and `/display` (a stand-in for the physical
+OLED). Back in `terminal/`'s console, type the `FINGER:<slot>` you registered,
+then `CONFIRM` — both browser tabs update live, and `/pos` ends on a receipt with
+a QR to the transaction. `firmware/` implements the same protocol for when the
+real ESP32 is wired up; nothing else changes.
 
 ## If `deploy:amoy` fails partway through
 
