@@ -79,6 +79,7 @@ Fund:
 | `MERCHANT_KEY` | Optional. The **merchant** wallet's private key, only if you want `scripts/deploy.js` to auto-register the terminal for you. Leave blank to do that one step manually instead — the script will print the exact instructions when you run it. |
 | `TERMINAL_ADDRESS` | The **terminal** wallet's address from step 2. Must match `terminal/.env`'s `TERMINAL_KEY` below — same wallet, referenced from both sides. |
 | `POLYGONSCAN_API_KEY` | Free at [polygonscan.com/myapikey](https://polygonscan.com/myapikey) — sign up, then "Add" a new API key. Only needed to run `scripts/verify.js`. |
+| `CONTRACT_ADDRESS` | Optional, normally left blank. Only set this if `deploy:amoy` deployed successfully but then failed on a later step (a flaky RPC mid-script is the usual cause) — set it to the address that was printed, then re-run `deploy:amoy` to resume without paying to deploy again. |
 
 ## `terminal/.env`
 
@@ -106,3 +107,16 @@ Fund:
 6. If you left `MERCHANT_KEY` blank, follow the manual `registerTerminal` step the
    deploy script printed.
 7. Optional: `npm run verify:amoy` once `POLYGONSCAN_API_KEY` is set.
+
+## If `deploy:amoy` fails partway through
+
+The Amoy RPC (especially the free public one) can drop a connection mid-script.
+Check the output for how far it got:
+
+- **Failed before "DecentraPay deployed to..."** — nothing happened on-chain, no
+  gas spent. Just re-run `npm run deploy:amoy`.
+- **Printed an address, then failed later** (e.g. during `setMerchant` or
+  `registerTerminal`) — the contract is live and gas is already spent. Don't
+  re-run it plain, or you'll deploy a second, wasted contract. Instead, set
+  `CONTRACT_ADDRESS` in `.env` to the address it printed and re-run
+  `npm run deploy:amoy` — it'll skip deployment and pick up from `setMerchant`.

@@ -7,7 +7,7 @@ const path = require("path");
 const EXPLORER_BASE = "https://amoy.polygonscan.com";
 
 async function main() {
-  const { MERCHANT_ADDRESS, MERCHANT_KEY, TERMINAL_ADDRESS } = process.env;
+  const { MERCHANT_ADDRESS, MERCHANT_KEY, TERMINAL_ADDRESS, CONTRACT_ADDRESS } = process.env;
 
   if (!MERCHANT_ADDRESS || !hre.ethers.isAddress(MERCHANT_ADDRESS)) {
     throw new Error(
@@ -20,14 +20,35 @@ async function main() {
     );
   }
 
-  const [deployer] = await hre.ethers.getSigners();
-  console.log(`Deploying DecentraPay with deployer ${deployer.address}...`);
-
   const DecentraPay = await hre.ethers.getContractFactory("DecentraPay");
-  const decentraPay = await DecentraPay.deploy();
-  await decentraPay.waitForDeployment();
-  const address = await decentraPay.getAddress();
-  console.log(`DecentraPay deployed to ${address}`);
+  let decentraPay;
+  let address;
+
+  if (CONTRACT_ADDRESS) {
+    if (!hre.ethers.isAddress(CONTRACT_ADDRESS)) {
+      throw new Error("CONTRACT_ADDRESS is set but is not a valid address.");
+    }
+    address = CONTRACT_ADDRESS;
+    decentraPay = DecentraPay.attach(address);
+    console.log(`Resuming against existing contract at ${address} (no redeploy).`);
+  } else {
+    const [deployer] = await hre.ethers.getSigners();
+    console.log(`Deploying DecentraPay with deployer ${deployer.address}...`);
+    decentraPay = await DecentraPay.deploy();
+    await decentraPay.waitForDeployment();
+    address = await decentraPay.getAddress();
+    console.log(`DecentraPay deployed to ${address}`);
+  }
+
+  // Write the shared file as soon as an address exists — before setMerchant/
+  // registerTerminal — so a network hiccup in either of those can never leave
+  // a real deployment with no record of where it landed.
+  const artifact = await hre.artifacts.readArtifact("DecentraPay");
+  const sharedDir = path.join(__dirname, "..", "..", "shared");
+  fs.mkdirSync(sharedDir, { recursive: true });
+  const sharedPath = path.join(sharedDir, "DecentraPay.json");
+  fs.writeFileSync(sharedPath, JSON.stringify({ address, abi: artifact.abi }, null, 2) + "\n");
+  console.log(`Wrote address + ABI to ${path.relative(process.cwd(), sharedPath)}`);
 
   console.log(`Granting merchant status to ${MERCHANT_ADDRESS}...`);
   await (await decentraPay.setMerchant(MERCHANT_ADDRESS, true)).wait();
@@ -60,13 +81,6 @@ async function main() {
     console.log("entirely unless you explicitly opt in by setting MERCHANT_KEY yourself.\n");
   }
 
-  const artifact = await hre.artifacts.readArtifact("DecentraPay");
-  const sharedDir = path.join(__dirname, "..", "..", "shared");
-  fs.mkdirSync(sharedDir, { recursive: true });
-  const sharedPath = path.join(sharedDir, "DecentraPay.json");
-  fs.writeFileSync(sharedPath, JSON.stringify({ address, abi: artifact.abi }, null, 2) + "\n");
-  console.log(`\nWrote address + ABI to ${path.relative(process.cwd(), sharedPath)}`);
-
   console.log("\n--- Deployment summary ---");
   console.log(`Contract address : ${address}`);
   console.log(`Explorer         : ${EXPLORER_BASE}/address/${address}`);
@@ -76,6 +90,9 @@ async function main() {
       terminalRegistered ? "" : " (NOT yet registered — see instructions above)"
     }`
   );
+  if (CONTRACT_ADDRESS) {
+    console.log("(Resumed via CONTRACT_ADDRESS — no new contract was deployed.)");
+  }
 }
 
 main().catch((error) => {
