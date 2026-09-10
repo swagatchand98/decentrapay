@@ -78,7 +78,7 @@ Fund:
 | `MERCHANT_ADDRESS` | The **merchant** wallet's address from step 2. |
 | `MERCHANT_KEY` | Optional. The **merchant** wallet's private key, only if you want `scripts/deploy.js` to auto-register the terminal for you. Leave blank to do that one step manually instead — the script will print the exact instructions when you run it. |
 | `TERMINAL_ADDRESS` | The **terminal** wallet's address from step 2. Must match `terminal/.env`'s `TERMINAL_KEY` below — same wallet, referenced from both sides. |
-| `POLYGONSCAN_API_KEY` | Free at [polygonscan.com/myapikey](https://polygonscan.com/myapikey) — sign up, then "Add" a new API key. Only needed to run `scripts/verify.js`. |
+| `ETHERSCAN_API_KEY` | Free at [etherscan.io/myapikey](https://etherscan.io/myapikey) — sign up (at Etherscan, not PolygonScan; their API keys are unified across 60+ chains including Amoy now), then "Add" a new API key. Only needed to run `scripts/verify.js`. |
 | `CONTRACT_ADDRESS` | Optional, normally left blank. Only set this if `deploy:amoy` deployed successfully but then failed on a later step (a flaky RPC mid-script is the usual cause) — set it to the address that was printed, then re-run `deploy:amoy` to resume without paying to deploy again. |
 
 ## `terminal/.env`
@@ -106,7 +106,7 @@ Fund:
 5. Copy the printed contract address into `web/.env`'s `VITE_CONTRACT_ADDRESS`.
 6. If you left `MERCHANT_KEY` blank, follow the manual `registerTerminal` step the
    deploy script printed.
-7. Optional: `npm run verify:amoy` once `POLYGONSCAN_API_KEY` is set.
+7. Optional: `npm run verify:amoy` once `ETHERSCAN_API_KEY` is set.
 
 ## If `deploy:amoy` fails partway through
 

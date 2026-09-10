@@ -11,18 +11,10 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: {
-      polygonAmoy: process.env.POLYGONSCAN_API_KEY || "",
-    },
-    customChains: [
-      {
-        network: "polygonAmoy",
-        chainId: 80002,
-        urls: {
-          apiURL: "https://api-amoy.polygonscan.com/api",
-          browserURL: "https://amoy.polygonscan.com",
-        },
-      },
-    ],
+    // Etherscan's V2 API is unified across 60+ chains (Amoy included) under one
+    // key — this must be a plain string, not a per-network object, to use it.
+    // Polygon Amoy is already a built-in chain in hardhat-verify, so no
+    // customChains entry is needed.
+    apiKey: process.env.ETHERSCAN_API_KEY || "",
   },
 };
