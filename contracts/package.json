@@ -7,7 +7,8 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "deploy:amoy": "hardhat run scripts/deploy.js --network amoy",
-    "verify:amoy": "hardhat run scripts/verify.js --network amoy"
+    "verify:amoy": "hardhat run scripts/verify.js --network amoy",
+    "status:amoy": "hardhat run scripts/status.js --network amoy"
   },
   "devDependencies": {
     "hardhat": "^2.22.0",
